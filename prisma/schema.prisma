@@ -1,0 +1,43 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  phone        String   @unique
+  otp          String?
+  otpCreatedAt DateTime?
+  active       Boolean  @default(true)
+}
+
+model Patient {
+  id        String   @id @default(cuid())
+  name      String
+  age       Int?
+  phone     String?  @unique
+  gender    String?
+  visits    Visit[]
+}
+
+model Visit {
+  id          String   @id @default(cuid())
+  patientId   String
+  date        DateTime @default(now())
+  note        String?
+  drugs       Json?    // stores JSON array of drugs prescribed
+  totalPrice  Decimal  @db.Decimal(10,2)
+  paid        Boolean  @default(false)
+  patient     Patient  @relation(fields: [patientId], references: [id])
+}
+
+model Drugs {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  dosage      String?
+}
