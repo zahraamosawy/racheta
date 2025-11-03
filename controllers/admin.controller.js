@@ -78,9 +78,14 @@ const getAllAdmins = async () => {
 
 // 🔹 جلب مدير حسب الـ ID
 const getAdminById = async (id) => {
-  const admin = await prisma.admin.findUnique({ where: { id: Number(id) } });
-  if (!admin) throw new Error("Admin not found");
-  return admin;
+  try {
+    const admin = await prisma.admin.findUnique({ where: { id: String(id) } });
+    if (!admin) throw new Error("Admin not found");
+    return admin;
+  } catch (error) {
+    console.error("Error fetching admin by ID:", error);
+    throw error;
+  }
 };
 
 // 🔹 إضافة مدير جديد يدوياً
@@ -93,8 +98,22 @@ const addAdmin = async (name, phone) => {
 
 // 🔹 حذف مدير
 const deleteAdmin = async (id) => {
-  await prisma.admin.delete({ where: { id: Number(id) } });
-  return { success: true, message: "Admin deleted" };
+  try {
+    // Check if admin exists
+    const existingAdmin = await prisma.admin.findUnique({
+      where: { id: String(id) },
+    });
+    
+    if (!existingAdmin) {
+      throw new Error("Admin not found");
+    }
+    
+    await prisma.admin.delete({ where: { id: String(id) } });
+    return { success: true, message: "Admin deleted" };
+  } catch (error) {
+    console.error("Error deleting admin:", error);
+    throw error;
+  }
 };
 
 module.exports = {

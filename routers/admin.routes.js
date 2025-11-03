@@ -13,7 +13,8 @@ router.post("/otp", async (req, res) => {
     const result = await createOtp(phone);
     res.json(result);
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error creating OTP:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
@@ -27,7 +28,8 @@ router.post("/verify", async (req, res) => {
     const result = await verifyOtp(phone, otp);
     res.json(result);
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error verifying OTP:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
@@ -37,7 +39,8 @@ router.get("/", async (req, res) => {
     const admins = await prisma.admin.findMany();
     res.json(admins);
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error fetching admins:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
@@ -45,11 +48,12 @@ router.get("/", async (req, res) => {
 router.get("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    const admin = await prisma.admin.findUnique({ where: { id: Number(id) } });
+    const admin = await prisma.admin.findUnique({ where: { id: String(id) } });
     if (!admin) return res.status(404).json({ success: false, message: "Admin not found" });
     res.json(admin);
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error fetching admin:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
@@ -57,12 +61,24 @@ router.get("/:id", async (req, res) => {
 router.post("/", async (req, res) => {
   try {
     const { name, phone } = req.body;
+    if (!phone) return res.status(400).json({ success: false, message: "Phone is required" });
+    
+    // Check if admin with this phone already exists
+    const existingAdmin = await prisma.admin.findUnique({
+      where: { phone }
+    });
+    
+    if (existingAdmin) {
+      return res.status(400).json({ success: false, message: "Admin with this phone already exists" });
+    }
+    
     const admin = await prisma.admin.create({
       data: { name, phone },
     });
     res.json(admin);
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error creating admin:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
@@ -70,10 +86,15 @@ router.post("/", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   try {
     const { id } = req.params;
-    await prisma.admin.delete({ where: { id } });
+    // Check if admin exists
+    const admin = await prisma.admin.findUnique({ where: { id: String(id) } });
+    if (!admin) return res.status(404).json({ success: false, message: "Admin not found" });
+    
+    await prisma.admin.delete({ where: { id: String(id) } });
     res.json({ success: true, message: "Admin deleted" });
   } catch (err) {
-    res.status(500).json({ success: false, message: "Server error" });
+    console.error("Error deleting admin:", err);
+    res.status(500).json({ success: false, message: err.message });
   }
 });
 
